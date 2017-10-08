@@ -20,6 +20,8 @@
     var app = new PIXI.Application(window.innerWidth, window.innerHeight, { transparent: true });
     document.body.appendChild(app.view);
 
+    var grid_matrix;
+
     PIXI.loader
       .add("tilesets/pokemons_0.json")
       .load(setup);
@@ -60,7 +62,7 @@
         }
       }
 
-      // shuffle the matrix
+      // shuffle the matrix, change if a better way is found
       for (i = 0; i < ROW_COUNT; i++) {
         pokemon_matrix[i].sort(function() { return 0.5 - Math.random() });
       }
@@ -74,6 +76,12 @@
       background.lineStyle(2, 0xCCCCCC, 1);
       background.drawRect(LEFT_MARGIN, TOP_MARGIN, CANVAS_WIDTH, CANVAS_HEIGHT);
       background.endFill();
+
+      // init matrix
+      grid_matrix = new Array(ROW_COUNT);
+      for (i = 0; i < ROW_COUNT; i++) {
+        grid_matrix[i] = new Array(COL_COUNT);
+      }
 
       for (i = 0; i < ROW_COUNT; i++) {
         for (j = 0; j < COL_COUNT; j++) {
@@ -91,6 +99,11 @@
           pokemon.x = grid_x + 2;
           pokemon.y = grid_y + 5;
           grid.addChild(pokemon);
+          grid_matrix[i][j] = {
+            "xcor": pokemon.x,
+            "ycor": pokemon.y,
+            "has_pokemon": true
+          };
 
           grid.interactive = true;
           grid.buttonMode = true;
@@ -105,11 +118,47 @@
 
     var rectangle;
     var selected_pokemon;
+    var cur_id;
+    var selected_pos;
+    var cur_pos;
     function gridClick() {
       if (selected_pokemon !== undefined) {
         selected_pokemon.alpha = 1;
+        cur_pos = findPos(
+          this.children[0].x, this.children[0].y
+        );
+        if (cur_id === this.children[0].texture.textureCacheIds[0]
+          && canBeErased(selected_pos, cur_pos)
+        ) {
+          var line = new PIXI.Graphics();
+          line.lineStyle(4, 0x0a3d91, 1);
+          line.moveTo(
+            selected_pokemon.x + GRID_WIDTH / 2 - 2,
+            selected_pokemon.y + GRID_HEIGHT / 2 -5
+          );
+          line.lineTo(
+            this.children[0].x + GRID_WIDTH / 2 - 2,
+            this.children[0].y + GRID_HEIGHT / 2 - 5
+          );
+          app.stage.addChild(line);
+          var cur_grid = this;
+          setTimeout(function(){
+            grid_matrix[selected_pos[0]][selected_pos[1]].has_pokemon = false;
+            grid_matrix[cur_pos[0]][cur_pos[1]].has_pokemon = false;
+            selected_pokemon.parent.destroy();
+            cur_grid.destroy();
+            rectangle.destroy();
+            rectangle = undefined;
+            cur_id = undefined;
+            selected_pokemon = undefined;
+            selected_pos = undefined;
+            line.destroy();
+          }, 200);
+          return;
+        }
       }
       selected_pokemon = this.children[0];
+
       if (rectangle === undefined) {
         rectangle = new PIXI.Graphics();
         rectangle.beginFill(0xCCCCCC, 0);
@@ -121,6 +170,25 @@
       rectangle.x = selected_pokemon.x - 2;
       rectangle.y = selected_pokemon.y - 5;
       selected_pokemon.alpha = 0.5;
+      cur_id = selected_pokemon.texture.textureCacheIds[0];
+      selected_pos = findPos(selected_pokemon.x, selected_pokemon.y);
+    }
+
+    function findPos(xcor, ycor) {
+      for (var i=0; i < ROW_COUNT; i++) {
+        for (var j=0; j < COL_COUNT; j++) {
+          if (grid_matrix[i][j].xcor === xcor
+            && grid_matrix[i][j].ycor === ycor){
+              return [i, j];
+            }
+        }
+      }
+    }
+
+    function canBeErased(first_pos, second_pos) {
+      console.log(first_pos);
+      console.log(second_pos);
+      return true;
     }
 
   </script>
