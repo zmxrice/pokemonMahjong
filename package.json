@@ -7,5 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Mingxiang Zhu",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "pixi-sound": "^1.4.2"
+  }
 }
