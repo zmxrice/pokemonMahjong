@@ -25,6 +25,25 @@
     document.body.appendChild(app.view);
 
     var grid_matrix;
+    var background;
+    var num_pokemons = (GRID_ROW_COUNT-2) * (GRID_COL_COUNT-2);
+
+    var style = new PIXI.TextStyle({
+      fontFamily: 'Arial',
+      fontSize: 36,
+      fontStyle: 'italic',
+      fontWeight: 'bold',
+      fill: ['#ffffff', '#00ff99'], // gradient
+      stroke: '#4a1850',
+      strokeThickness: 5,
+      dropShadow: true,
+      dropShadowColor: '#000000',
+      dropShadowBlur: 4,
+      dropShadowAngle: Math.PI / 6,
+      dropShadowDistance: 6,
+      wordWrap: true,
+      wordWrapWidth: 250
+    });
 
     PIXI.loader
       .add("tilesets/pokemons.json")
@@ -57,7 +76,7 @@
         Math.floor(pokemons.length/SPECIES_OF_POKEMON)
         * Math.random()
       );
-      console.log(segment);
+
       for (i = 0; i < GRID_ROW_COUNT-2; i++) {
         for (j = 0; j < GRID_COL_COUNT-2; j++) {
           if (!is_second) {
@@ -83,7 +102,7 @@
       // init the grid system
       var grid_x = LEFT_MARGIN;
       var grid_y = TOP_MARGIN;
-      var background = new PIXI.Graphics();
+      background = new PIXI.Graphics();
       background.beginFill(0xCCCCCC);
       background.lineStyle(2, 0xCCCCCC, 1);
       background.drawRect(LEFT_MARGIN, TOP_MARGIN, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -102,7 +121,6 @@
           if (i != 0 && i != GRID_ROW_COUNT-1
             && j != 0 && j != GRID_COL_COUNT - 1
           ){
-            grid.buttonMode = true;
             grid.beginFill(0xFFFFFF);
             grid.lineStyle(2, 0xcbcfd6, 1);
             grid_x = LEFT_MARGIN + j * GRID_WIDTH;
@@ -222,6 +240,21 @@
             second_turn_pos = undefined;
             line.destroy();
             PIXI.sound.play('link');
+            num_pokemons -= 2
+            if (num_pokemons === 0){
+              var winText = new PIXI.Text('CONGRADS! CLICK TO PLAY AGAIN', style);
+              winText.x = window.innerWidth/2 - 150;
+              winText.y = window.innerHeight/2 - 50;
+              winText.interactive = true;
+              winText.buttonMode = true;
+
+              winText.on('pointerdown', function(){
+                background.destroy();
+                setup();
+                num_pokemons = (GRID_ROW_COUNT-2) * (GRID_COL_COUNT-2);
+              });
+              app.stage.addChild(winText);
+            }
           }, 200);
           return;
         }
