@@ -16,7 +16,7 @@
     // leave 4 edges blank without pokemons
     var GRID_ROW_COUNT = CANVAS_HEIGHT / GRID_HEIGHT;
     var GRID_COL_COUNT = CANVAS_WIDTH / GRID_WIDTH;
-    var SPECIES_OF_POKEMON = 30;
+    var SPECIES_OF_POKEMON = 50;
 
     var app = new PIXI.Application(window.innerWidth, window.innerHeight, { transparent: true });
     document.body.appendChild(app.view);
@@ -146,8 +146,8 @@
     var selected_pokemon;
     var selected_id;
     var selected_pos;
-    var first_turn_grid;
-    var second_turn_grid;
+    var first_turn_pos;
+    var second_turn_pos;
 
     function gridClick() {
       var cur_pos = findPos(
@@ -163,56 +163,44 @@
           var line = new PIXI.Graphics();
           var width_offset = Math.floor(GRID_WIDTH / 2);
           var height_offset = Math.floor(GRID_HEIGHT / 2);
-          if (cur_pos[0] === selected_pos[0]
-            && (cur_pos[0] === 1 || cur_pos[0] === GRID_ROW_COUNT-2)
+          if (first_turn_pos !== undefined &&
+            (
+              first_turn_pos[0] === 0
+              || first_turn_pos[0] === GRID_ROW_COUNT-1
+            )
           ){
-            console.log("h edge");
-            width_offset -= 2;
+            width_offset += 2;
           }
-          if (cur_pos[1] === selected_pos[1]
-            && (cur_pos[1] === 1 || cur_pos[1] === GRID_COL_COUNT-2)
+          if (first_turn_pos !== undefined &&
+            (
+              first_turn_pos[1] === 0
+              || first_turn_pos[1] === GRID_COL_COUNT-1
+            )
           ){
-            console.log("v edge")
-            height_offset -= 5;
+            height_offset += 5;
           }
-
-          console.log(cur_pos);
-          console.log(selected_pos);
 
           line.lineStyle(4, 0x0a3d91, 1);
           line.moveTo(
-            grid_matrix[selected_pos[0]][selected_pos[1]].xcor + width_offset,
-            grid_matrix[selected_pos[0]][selected_pos[1]].ycor + height_offset
+            grid_matrix[selected_pos[0]][selected_pos[1]].xcor + Math.floor(GRID_WIDTH / 2),
+            grid_matrix[selected_pos[0]][selected_pos[1]].ycor + Math.floor(GRID_HEIGHT / 2)
           );
-          if (first_turn_grid !== undefined){
+          if (first_turn_pos !== undefined){
             line.lineTo(
-              first_turn_grid.xcor + Math.floor(GRID_WIDTH / 2),
-              first_turn_grid.ycor + Math.floor(GRID_HEIGHT / 2)
+              grid_matrix[first_turn_pos[0]][first_turn_pos[1]].xcor + width_offset,
+              grid_matrix[first_turn_pos[0]][first_turn_pos[1]].ycor + height_offset
             );
           }
-          if (second_turn_grid !== undefined){
+          if (second_turn_pos !== undefined){
             line.lineTo(
-              second_turn_grid.xcor + Math.floor(GRID_WIDTH / 2),
-              second_turn_grid.ycor + Math.floor(GRID_HEIGHT / 2)
+              grid_matrix[second_turn_pos[0]][second_turn_pos[1]].xcor + width_offset,
+              grid_matrix[second_turn_pos[0]][second_turn_pos[1]].ycor + height_offset
             );
           }
           line.lineTo(
-            grid_matrix[cur_pos[0]][cur_pos[1]].xcor + width_offset,
-            grid_matrix[cur_pos[0]][cur_pos[1]].ycor + height_offset
+            grid_matrix[cur_pos[0]][cur_pos[1]].xcor + Math.floor(GRID_WIDTH / 2),
+            grid_matrix[cur_pos[0]][cur_pos[1]].ycor + Math.floor(GRID_HEIGHT / 2)
           );
-
-          console.log("--------------------------")
-          if (first_turn_grid !== undefined){
-            console.log(first_turn_grid.xcor + ", "+ first_turn_grid.ycor);
-          }
-          if (second_turn_grid !== undefined){
-            console.log(second_turn_grid.xcor +", "+second_turn_grid.ycor);
-          }
-
-          console.log(grid_matrix[selected_pos[0]][selected_pos[1]].xcor
-            +","+grid_matrix[selected_pos[0]][selected_pos[1]].ycor);
-          console.log(grid_matrix[cur_pos[0]][cur_pos[1]].xcor
-            +", "+grid_matrix[cur_pos[0]][cur_pos[1]].ycor);
 
           app.stage.addChild(line);
 
@@ -227,8 +215,8 @@
             selected_id = undefined;
             selected_pokemon = undefined;
             selected_pos = undefined;
-            first_turn_grid = undefined;
-            second_turn_grid = undefined;
+            first_turn_pos = undefined;
+            second_turn_pos = undefined;
             line.destroy();
           }, 200);
           return;
@@ -326,9 +314,9 @@
     }
 
     function checkTurnOnce(first_pos, second_pos) {
-      var first_pos_turn = false;
+      var is_first_pos_turn = false;
       if (!grid_matrix[first_pos[0]][second_pos[1]].has_pokemon){
-        first_pos_turn = checkHorizontal(
+        is_first_pos_turn = checkHorizontal(
           first_pos,
           [
             first_pos[0],
@@ -344,9 +332,9 @@
         );
       }
 
-      var second_pos_turn = false;
+      var is_second_pos_turn = false;
       if (!grid_matrix[second_pos[0]][first_pos[1]].has_pokemon){
-        second_pos_turn = checkHorizontal(
+        is_second_pos_turn = checkHorizontal(
           [
             second_pos[0],
             first_pos[1]
@@ -361,13 +349,13 @@
           ]
         );
       }
-      if (first_pos_turn) {
-        second_turn_grid = grid_matrix[first_pos[0]][second_pos[1]];
+      if (is_first_pos_turn) {
+        second_turn_pos = [first_pos[0],second_pos[1]];
       }
-      if (second_pos_turn) {
-        second_turn_grid = grid_matrix[second_pos[0]][first_pos[1]];
+      if (is_second_pos_turn) {
+        second_turn_pos = [second_pos[0],first_pos[1]];
       }
-      return first_pos_turn || second_pos_turn;
+      return is_first_pos_turn || is_second_pos_turn;
     }
 
     function checkMaxTurnTwice(first_pos, second_pos) {
@@ -377,7 +365,7 @@
         && !grid_matrix[cur_pos[0]][cur_pos[1]].has_pokemon
       ) {
         if (checkTurnOnce(cur_pos, second_pos)){
-          first_turn_grid = grid_matrix[cur_pos[0]][cur_pos[1]];
+          first_turn_pos = [cur_pos[0],cur_pos[1]];
           return true;
         }
         cur_pos[0] -= 1;
@@ -388,7 +376,7 @@
         && !grid_matrix[cur_pos[0]][cur_pos[1]].has_pokemon
       ) {
         if (checkTurnOnce(cur_pos, second_pos)){
-          first_turn_grid = grid_matrix[cur_pos[0]][cur_pos[1]];
+          first_turn_pos = [cur_pos[0],cur_pos[1]];
           return true;
         }
         cur_pos[0] += 1;
@@ -399,7 +387,7 @@
         && !grid_matrix[cur_pos[0]][cur_pos[1]].has_pokemon
       ) {
         if (checkTurnOnce(cur_pos, second_pos)){
-          first_turn_grid = grid_matrix[cur_pos[0]][cur_pos[1]];
+          first_turn_pos = [cur_pos[0], cur_pos[1]];
           return true;
         }
         cur_pos[1] -= 1;
@@ -410,7 +398,7 @@
         && !grid_matrix[cur_pos[0]][cur_pos[1]].has_pokemon
       ) {
         if (checkTurnOnce(cur_pos, second_pos)){
-          first_turn_grid = grid_matrix[cur_pos[0]][cur_pos[1]];
+          first_turn_pos = [cur_pos[0], cur_pos[1]];
           return true;
         }
         cur_pos[1] += 1;
