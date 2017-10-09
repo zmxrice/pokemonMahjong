@@ -17,25 +17,21 @@
     // leave 4 edges blank without pokemons
     var GRID_ROW_COUNT = Math.floor(CANVAS_HEIGHT / GRID_HEIGHT);
     var GRID_COL_COUNT = Math.floor(CANVAS_WIDTH / GRID_WIDTH);
-    var SPECIES_OF_POKEMON = 50;
+    var SPECIES_OF_POKEMON = 60;
 
+    PIXI.sound.add('link', 'sounds/link.wav');
     var app = new PIXI.Application(window.innerWidth, window.innerHeight, { transparent: true });
     document.body.appendChild(app.view);
 
-    PIXI.sound.add('link', 'sounds/link.wav');
-
     var grid_matrix;
 
-    var source_idx = Math.floor(Math.random() * 5);
-
     PIXI.loader
-      .add("tilesets/pokemons_"+source_idx+".json")
+      .add("tilesets/pokemons.json")
       .load(setup);
 
     function setup() {
       // get all the pokemons
       var pokemonTexture;
-      var pokemon;
       var pokemons = [];
       for (var t in PIXI.utils.TextureCache){
         if (t.startsWith("300px")){
@@ -55,14 +51,17 @@
       }
 
       var pokemon_array = [];
-
+      var pokemon;
+      var segment = Math.floor(
+        Math.floor(pokemons.length/SPECIES_OF_POKEMON)
+        * Math.random()
+      );
+      console.log(segment);
       for (i = 0; i < GRID_ROW_COUNT-2; i++) {
         for (j = 0; j < GRID_COL_COUNT-2; j++) {
           if (!is_second) {
-            rand_idx = Math.floor(Math.random() *
-              Math.min(pokemons.length, SPECIES_OF_POKEMON
-              )
-            );
+            rand_idx = segment * SPECIES_OF_POKEMON
+            + Math.floor(Math.random() * SPECIES_OF_POKEMON);
           }
           is_second = !is_second;
           pokemon = new PIXI.Sprite(pokemons[rand_idx]);
