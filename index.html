@@ -13,17 +13,20 @@
     var TOP_MARGIN = 30;
     var GRID_WIDTH = 50;
     var GRID_HEIGHT = 65;
-    var ROW_COUNT = CANVAS_HEIGHT / GRID_HEIGHT;
-    var COL_COUNT = CANVAS_WIDTH / GRID_WIDTH;
-    var SPECIES_OF_POKEMON = 20;
+    // leave 4 edges blank without pokemons
+    var GRID_ROW_COUNT = CANVAS_HEIGHT / GRID_HEIGHT;
+    var GRID_COL_COUNT = CANVAS_WIDTH / GRID_WIDTH;
+    var SPECIES_OF_POKEMON = 30;
 
     var app = new PIXI.Application(window.innerWidth, window.innerHeight, { transparent: true });
     document.body.appendChild(app.view);
 
     var grid_matrix;
 
+    var source_idx = Math.floor(Math.random() * 5);
+
     PIXI.loader
-      .add("tilesets/pokemons_0.json")
+      .add("tilesets/pokemons_"+source_idx+".json")
       .load(setup);
 
     function setup() {
@@ -43,30 +46,36 @@
       var rand_idx;
       var is_second = false;
       // init matrix
-      var pokemon_matrix = new Array(ROW_COUNT);
-      for (i = 0; i < ROW_COUNT; i++) {
-        pokemon_matrix[i] = new Array(COL_COUNT);
+      var pokemon_matrix = new Array(GRID_ROW_COUNT-2);
+      for (i = 0; i < GRID_ROW_COUNT-2; i++) {
+        pokemon_matrix[i] = new Array(GRID_COL_COUNT-2);
       }
 
-      for (i = 0; i < ROW_COUNT; i++) {
-        for (j = 0; j < COL_COUNT; j++) {
+      var pokemon_array = [];
+
+      for (i = 0; i < GRID_ROW_COUNT-2; i++) {
+        for (j = 0; j < GRID_COL_COUNT-2; j++) {
           if (!is_second) {
-            rand_idx = Math.floor(
-              Math.random() *
-              Math.max(pokemons.length, SPECIES_OF_POKEMON)
+            rand_idx = Math.floor(Math.random() *
+              Math.min(pokemons.length, SPECIES_OF_POKEMON
+              )
             );
           }
           is_second = !is_second;
           pokemon = new PIXI.Sprite(pokemons[rand_idx]);
-          pokemon_matrix[i][j] = pokemon;
+          pokemon_array.push(pokemon);
         }
       }
 
       // shuffle the matrix, change if a better way is found
-      for (i = 0; i < ROW_COUNT; i++) {
-        pokemon_matrix[i].sort(function() { return 0.5 - Math.random() });
+      pokemon_array.sort(function() { return 0.5 - Math.random() });
+      var cnt = 0;
+      for (i = 0; i < GRID_ROW_COUNT-2; i++) {
+        for (j = 0; j < GRID_COL_COUNT-2; j++) {
+          pokemon_matrix[i][j] = pokemon_array[cnt];
+          cnt ++;
+        }
       }
-      pokemon_matrix.sort(function() { return 0.5 - Math.random() });
 
       // init the grid system
       var grid_x = LEFT_MARGIN;
@@ -78,36 +87,53 @@
       background.endFill();
 
       // init matrix
-      grid_matrix = new Array(ROW_COUNT);
-      for (i = 0; i < ROW_COUNT; i++) {
-        grid_matrix[i] = new Array(COL_COUNT);
+      grid_matrix = new Array(GRID_ROW_COUNT);
+      for (i = 0; i < GRID_ROW_COUNT; i++) {
+        grid_matrix[i] = new Array(GRID_COL_COUNT);
       }
 
-      for (i = 0; i < ROW_COUNT; i++) {
-        for (j = 0; j < COL_COUNT; j++) {
+      for (i = 0; i < GRID_ROW_COUNT; i++) {
+        for (j = 0; j < GRID_COL_COUNT; j++) {
           var grid = new PIXI.Graphics();
-          grid.buttonMode = true;
-          grid.beginFill(0xFFFFFF);
-          grid.lineStyle(2, 0xcbcfd6, 1);
-          grid_x = LEFT_MARGIN + j * GRID_WIDTH;
-          grid_y = TOP_MARGIN + i * GRID_HEIGHT;
-          grid.drawRect(grid_x, grid_y, GRID_WIDTH, GRID_HEIGHT);
-          grid.endFill();
 
-          pokemon = pokemon_matrix[i][j];
-          pokemon.scale.set(0.16);
-          pokemon.x = grid_x + 2;
-          pokemon.y = grid_y + 5;
-          grid.addChild(pokemon);
-          grid_matrix[i][j] = {
-            "xcor": pokemon.x,
-            "ycor": pokemon.y,
-            "has_pokemon": true
-          };
+          if (i != 0 && i != GRID_ROW_COUNT-1
+            && j != 0 && j != GRID_COL_COUNT - 1
+          ){
+            grid.buttonMode = true;
+            grid.beginFill(0xFFFFFF);
+            grid.lineStyle(2, 0xcbcfd6, 1);
+            grid_x = LEFT_MARGIN + j * GRID_WIDTH;
+            grid_y = TOP_MARGIN + i * GRID_HEIGHT;
+            grid.drawRect(grid_x, grid_y, GRID_WIDTH, GRID_HEIGHT);
+            grid.endFill();
+            // the four edges are blank
+            pokemon = pokemon_matrix[i-1][j-1];
+            pokemon.scale.set(0.15);
+            pokemon.x = grid_x + 2;
+            pokemon.y = grid_y + 5;
+            grid.addChild(pokemon);
+            grid_matrix[i][j] = {
+              "xcor": pokemon.x,
+              "ycor": pokemon.y,
+              "has_pokemon": true
+            };
+            grid.interactive = true;
+            grid.buttonMode = true;
+            grid.on('pointerdown', gridClick);
+          } else {
+            grid.beginFill(0xCCCCCC, 0);
+            grid.lineStyle(2, 0xCCCCCC, 1);
+            grid_x = LEFT_MARGIN + j * GRID_WIDTH;
+            grid_y = TOP_MARGIN + i * GRID_HEIGHT;
+            grid.drawRect(grid_x, grid_y, GRID_WIDTH, GRID_HEIGHT);
+            grid.endFill();
 
-          grid.interactive = true;
-          grid.buttonMode = true;
-          grid.on('pointerdown', gridClick);
+            grid_matrix[i][j] = {
+              "xcor": grid_x,
+              "ycor": grid_y,
+              "has_pokemon": false
+            };
+          }
 
           background.addChild(grid);
         }
@@ -118,29 +144,78 @@
 
     var rectangle;
     var selected_pokemon;
-    var cur_id;
+    var selected_id;
     var selected_pos;
-    var cur_pos;
+    var first_turn_grid;
+    var second_turn_grid;
+
     function gridClick() {
-      if (selected_pokemon !== undefined) {
+      var cur_pos = findPos(
+        this.children[0].x, this.children[0].y
+      );
+      if (selected_pokemon !== undefined
+        && !(cur_pos[0] === selected_pos[0] && cur_pos[1] === selected_pos[1])
+      ) {
         selected_pokemon.alpha = 1;
-        cur_pos = findPos(
-          this.children[0].x, this.children[0].y
-        );
-        if (cur_id === this.children[0].texture.textureCacheIds[0]
+        if (selected_id === this.children[0].texture.textureCacheIds[0]
           && canBeErased(selected_pos, cur_pos)
         ) {
           var line = new PIXI.Graphics();
+          var width_offset = Math.floor(GRID_WIDTH / 2);
+          var height_offset = Math.floor(GRID_HEIGHT / 2);
+          if (cur_pos[0] === selected_pos[0]
+            && (cur_pos[0] === 1 || cur_pos[0] === GRID_ROW_COUNT-2)
+          ){
+            console.log("h edge");
+            width_offset -= 2;
+          }
+          if (cur_pos[1] === selected_pos[1]
+            && (cur_pos[1] === 1 || cur_pos[1] === GRID_COL_COUNT-2)
+          ){
+            console.log("v edge")
+            height_offset -= 5;
+          }
+
+          console.log(cur_pos);
+          console.log(selected_pos);
+
           line.lineStyle(4, 0x0a3d91, 1);
           line.moveTo(
-            selected_pokemon.x + GRID_WIDTH / 2 - 2,
-            selected_pokemon.y + GRID_HEIGHT / 2 -5
+            grid_matrix[selected_pos[0]][selected_pos[1]].xcor + width_offset,
+            grid_matrix[selected_pos[0]][selected_pos[1]].ycor + height_offset
           );
+          if (first_turn_grid !== undefined){
+            line.lineTo(
+              first_turn_grid.xcor + Math.floor(GRID_WIDTH / 2),
+              first_turn_grid.ycor + Math.floor(GRID_HEIGHT / 2)
+            );
+          }
+          if (second_turn_grid !== undefined){
+            line.lineTo(
+              second_turn_grid.xcor + Math.floor(GRID_WIDTH / 2),
+              second_turn_grid.ycor + Math.floor(GRID_HEIGHT / 2)
+            );
+          }
           line.lineTo(
-            this.children[0].x + GRID_WIDTH / 2 - 2,
-            this.children[0].y + GRID_HEIGHT / 2 - 5
+            grid_matrix[cur_pos[0]][cur_pos[1]].xcor + width_offset,
+            grid_matrix[cur_pos[0]][cur_pos[1]].ycor + height_offset
           );
+
+          console.log("--------------------------")
+          if (first_turn_grid !== undefined){
+            console.log(first_turn_grid.xcor + ", "+ first_turn_grid.ycor);
+          }
+          if (second_turn_grid !== undefined){
+            console.log(second_turn_grid.xcor +", "+second_turn_grid.ycor);
+          }
+
+          console.log(grid_matrix[selected_pos[0]][selected_pos[1]].xcor
+            +","+grid_matrix[selected_pos[0]][selected_pos[1]].ycor);
+          console.log(grid_matrix[cur_pos[0]][cur_pos[1]].xcor
+            +", "+grid_matrix[cur_pos[0]][cur_pos[1]].ycor);
+
           app.stage.addChild(line);
+
           var cur_grid = this;
           setTimeout(function(){
             grid_matrix[selected_pos[0]][selected_pos[1]].has_pokemon = false;
@@ -149,14 +224,17 @@
             cur_grid.destroy();
             rectangle.destroy();
             rectangle = undefined;
-            cur_id = undefined;
+            selected_id = undefined;
             selected_pokemon = undefined;
             selected_pos = undefined;
+            first_turn_grid = undefined;
+            second_turn_grid = undefined;
             line.destroy();
           }, 200);
           return;
         }
       }
+
       selected_pokemon = this.children[0];
 
       if (rectangle === undefined) {
@@ -170,13 +248,13 @@
       rectangle.x = selected_pokemon.x - 2;
       rectangle.y = selected_pokemon.y - 5;
       selected_pokemon.alpha = 0.5;
-      cur_id = selected_pokemon.texture.textureCacheIds[0];
+      selected_id = selected_pokemon.texture.textureCacheIds[0];
       selected_pos = findPos(selected_pokemon.x, selected_pokemon.y);
     }
 
     function findPos(xcor, ycor) {
-      for (var i=0; i < ROW_COUNT; i++) {
-        for (var j=0; j < COL_COUNT; j++) {
+      for (var i=0; i < GRID_ROW_COUNT; i++) {
+        for (var j=0; j < GRID_COL_COUNT; j++) {
           if (grid_matrix[i][j].xcor === xcor
             && grid_matrix[i][j].ycor === ycor){
               return [i, j];
@@ -186,9 +264,159 @@
     }
 
     function canBeErased(first_pos, second_pos) {
-      console.log(first_pos);
-      console.log(second_pos);
-      return true;
+      if (first_pos[0] === second_pos[0]
+        && first_pos[1] === second_pos[1]
+      ) {
+        // same pos
+        return false;
+      }
+      if (checkHorizontal(first_pos, second_pos)){
+        return true;
+      }
+      if (checkVertical(first_pos, second_pos)){
+        return true;
+      }
+      if (checkTurnOnce(first_pos, second_pos)){
+        return true;
+      }
+      if (checkMaxTurnTwice(first_pos, second_pos)){
+        return true;
+      };
+      return false;
+    }
+
+    function checkHorizontal(first_pos, second_pos) {
+      if (first_pos[0] === second_pos[0]
+        && first_pos[1] === second_pos[1]
+      ) {
+        // same pos
+        return false;
+      }
+      if (first_pos[0] === second_pos[0]){
+        var start = Math.min(first_pos[1], second_pos[1]);
+        var end = Math.max(first_pos[1], second_pos[1])
+        for (var j=start+1; j < end; j++){
+          if (grid_matrix[first_pos[0]][j].has_pokemon){
+            return false;
+          }
+        }
+        return true;
+      }
+      return false;
+    }
+
+    function checkVertical(first_pos, second_pos) {
+      if (first_pos[0] === second_pos[0]
+        && first_pos[1] === second_pos[1]
+      ) {
+        // same pos
+        return false;
+      }
+      if (first_pos[1] === second_pos[1]){
+        var start = Math.min(first_pos[0], second_pos[0]);
+        var end = Math.max(first_pos[0], second_pos[0])
+        for (var i=start+1; i < end; i++){
+          if (grid_matrix[i][first_pos[1]].has_pokemon){
+            return false;
+          }
+        }
+        return true;
+      }
+      return false;
+    }
+
+    function checkTurnOnce(first_pos, second_pos) {
+      var first_pos_turn = false;
+      if (!grid_matrix[first_pos[0]][second_pos[1]].has_pokemon){
+        first_pos_turn = checkHorizontal(
+          first_pos,
+          [
+            first_pos[0],
+            second_pos[1]
+          ]
+        )
+        && checkVertical(
+          [
+            first_pos[0],
+            second_pos[1]
+          ],
+          second_pos
+        );
+      }
+
+      var second_pos_turn = false;
+      if (!grid_matrix[second_pos[0]][first_pos[1]].has_pokemon){
+        second_pos_turn = checkHorizontal(
+          [
+            second_pos[0],
+            first_pos[1]
+          ],
+          second_pos
+        )
+        && checkVertical(
+          first_pos,
+          [
+            second_pos[0],
+            first_pos[1]
+          ]
+        );
+      }
+      if (first_pos_turn) {
+        second_turn_grid = grid_matrix[first_pos[0]][second_pos[1]];
+      }
+      if (second_pos_turn) {
+        second_turn_grid = grid_matrix[second_pos[0]][first_pos[1]];
+      }
+      return first_pos_turn || second_pos_turn;
+    }
+
+    function checkMaxTurnTwice(first_pos, second_pos) {
+      var cur_pos;
+      cur_pos = [first_pos[0]-1, first_pos[1]];
+      while (cur_pos[0] >= 0
+        && !grid_matrix[cur_pos[0]][cur_pos[1]].has_pokemon
+      ) {
+        if (checkTurnOnce(cur_pos, second_pos)){
+          first_turn_grid = grid_matrix[cur_pos[0]][cur_pos[1]];
+          return true;
+        }
+        cur_pos[0] -= 1;
+      }
+
+      cur_pos = [first_pos[0]+1, first_pos[1]];
+      while (cur_pos[0] < GRID_ROW_COUNT
+        && !grid_matrix[cur_pos[0]][cur_pos[1]].has_pokemon
+      ) {
+        if (checkTurnOnce(cur_pos, second_pos)){
+          first_turn_grid = grid_matrix[cur_pos[0]][cur_pos[1]];
+          return true;
+        }
+        cur_pos[0] += 1;
+      }
+
+      cur_pos = [first_pos[0], first_pos[1]-1];
+      while (cur_pos[1] >= 0
+        && !grid_matrix[cur_pos[0]][cur_pos[1]].has_pokemon
+      ) {
+        if (checkTurnOnce(cur_pos, second_pos)){
+          first_turn_grid = grid_matrix[cur_pos[0]][cur_pos[1]];
+          return true;
+        }
+        cur_pos[1] -= 1;
+      }
+
+      cur_pos = [first_pos[0], first_pos[1]+1];
+      while (cur_pos[1] < GRID_COL_COUNT
+        && !grid_matrix[cur_pos[0]][cur_pos[1]].has_pokemon
+      ) {
+        if (checkTurnOnce(cur_pos, second_pos)){
+          first_turn_grid = grid_matrix[cur_pos[0]][cur_pos[1]];
+          return true;
+        }
+        cur_pos[1] += 1;
+      }
+
+      return false;
     }
 
   </script>
