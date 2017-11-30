@@ -20,7 +20,8 @@
     var GRID_COL_COUNT = Math.floor(CANVAS_WIDTH / GRID_WIDTH);
     var SPECIES_OF_POKEMON = 10;
 
-    PIXI.sound.add('link', 'sounds/link.wav');
+    PIXI.sound.add('clickRight', 'sounds/clickRight.wav');
+    PIXI.sound.add('clickWrong', 'sounds/clickWrong.wav');
     var app = new PIXI.Application(window.innerWidth, window.innerHeight, { transparent: true });
     document.body.appendChild(app.view);
 
@@ -130,8 +131,8 @@
             // the four edges are blank
             pokemon = pokemon_matrix[i-1][j-1];
             pokemon.scale.set(0.25);
-            pokemon.x = grid_x + 2;
-            pokemon.y = grid_y + 5;
+            pokemon.x = grid_x;
+            pokemon.y = grid_y + 8;
             pokemon.alpha = 0;
             grid.addChild(pokemon);
             grid_matrix[i][j] = {
@@ -173,8 +174,7 @@
             === curPokemon.texture.textureCacheIds[0]){
               curPokemon.alpha = 1;
               selected_pokemon.alpha = 1;
-              curPokemon.parent.alpha = 0.8;
-              PIXI.sound.play('link');
+              PIXI.sound.play('clickRight');
               setTimeout(function(){
                 selected_pokemon.parent.destroy();
                 curPokemon.parent.destroy();
@@ -194,25 +194,19 @@
                   });
                   app.stage.addChild(winText);
                 }
-              }, 800);
+              }, 500);
          } else {
            curPokemon.alpha = 1;
-           curPokemon.parent.alpha = 0.8;
+           PIXI.sound.play('clickWrong');
            setTimeout(function(){
              curPokemon.alpha = 0;
-             curPokemon.parent.alpha = 1;
-             selected_pokemon.parent.alpha = 1;
+             selected_pokemon.alpha = 0;
              selected_pokemon = undefined;
-           }, 600);
-
+           }, 500);
          }
       } else {
         curPokemon.alpha = 1;
-        setTimeout(function(){
-          curPokemon.alpha = 0;
-        }, 600);
         selected_pokemon = curPokemon;
-        curPokemon.parent.alpha = 0.8;
       }
     }
 
