@@ -13,12 +13,12 @@
     var CANVAS_HEIGHT = window.innerHeight;
     var LEFT_MARGIN = 0;
     var TOP_MARGIN = 0;
-    var GRID_WIDTH = 80;
-    var GRID_HEIGHT = 100;
+    var GRID_WIDTH = 60;
+    var GRID_HEIGHT = 80;
     // leave 4 edges blank without pokemons
     var GRID_ROW_COUNT = Math.floor(CANVAS_HEIGHT / GRID_HEIGHT);
     var GRID_COL_COUNT = Math.floor(CANVAS_WIDTH / GRID_WIDTH);
-    var SPECIES_OF_POKEMON = 10;
+    var SPECIES_OF_POKEMON = 20;
 
     PIXI.sound.add('clickRight', 'sounds/clickRight.wav');
     PIXI.sound.add('clickWrong', 'sounds/clickWrong.wav');
@@ -130,7 +130,7 @@
             grid.endFill();
             // the four edges are blank
             pokemon = pokemon_matrix[i-1][j-1];
-            pokemon.scale.set(0.25);
+            pokemon.scale.set(0.2);
             pokemon.x = grid_x;
             pokemon.y = grid_y + 8;
             pokemon.alpha = 0;
